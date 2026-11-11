@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Thế giới trong trang sách</title>
+<style>
+:root{--bg:#fff8ec;--ink:#3b2b1a;--card:#ffffff;--accent:#ff8a3d;--muted:#9a8670}
+*{box-sizing:border-box}
+body{margin:0;font-family:"Baloo 2","Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;display:flex;flex-direction:column;align-items:center}
+h1{font-size:clamp(20px,5vw,34px);margin:14px 16px 4px;text-align:center;color:#c2410c;letter-spacing:1px}
+.sub{color:var(--muted);margin-bottom:10px;font-size:14px}
+.stage{position:relative;width:min(760px,calc(100vw - 32px));aspect-ratio:16/10;border-radius:24px;overflow:hidden;box-shadow:0 10px 30px #0002;background:#87ceeb;transition:background 1s}
+.scene{position:absolute;inset:0;opacity:0;transition:opacity .8s}
+.scene.on{opacity:1}
+.e{position:absolute;line-height:1;user-select:none}
+.line{width:min(760px,calc(100vw - 32px));margin:16px 0 6px;min-height:3.2em;font-size:clamp(20px,4.6vw,32px);font-weight:700;text-align:center}
+.w{display:inline-block;margin:0 .14em;opacity:.25;transform:translateY(6px);transition:all .35s}
+.w.lit{opacity:1;transform:none;color:#c2410c}
+.w.hide{color:transparent;border-bottom:3px dashed var(--accent)}
+.w.hide.lit{color:transparent}
+.ctrl{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:6px 16px}
+button{font:inherit;font-size:16px;border:0;border-radius:999px;padding:9px 16px;background:#ffe2c9;color:var(--ink);cursor:pointer}
+button.main{background:var(--accent);color:#fff}
+button:active{transform:scale(.96)}
+.dots{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin:8px 16px}
+.dot{width:26px;height:26px;border-radius:50%;background:#ffe2c9;font-size:12px;display:grid;place-items:center;cursor:pointer}
+.dot.cur{background:var(--accent);color:#fff}
+.dot.s1{box-shadow:inset 0 -4px #60a5fa}.dot.s2{box-shadow:inset 0 -4px #a78bfa}.dot.s3{box-shadow:inset 0 -4px #f97316}.dot.s4{box-shadow:inset 0 -4px #22c55e}
+.full{width:min(760px,calc(100vw - 32px));margin:14px 0 30px;background:var(--card);border-radius:18px;padding:14px 18px;font-size:17px;line-height:1.6}
+.full p{margin:0 0 10px}.full span{cursor:pointer;display:block}.full span.cur{color:#c2410c;font-weight:700}
+/* animations */
+@keyframes twinkle{0%,100%{opacity:.3;transform:scale(.7)}50%{opacity:1;transform:scale(1.2)}}
+@keyframes sail{0%{left:-15%}100%{left:105%}}
+@keyframes bob{0%,100%{transform:translateY(0) rotate(-3deg)}50%{transform:translateY(-8px) rotate(3deg)}}
+@keyframes fall{0%{transform:translateY(-40px);opacity:0}20%{opacity:1}100%{transform:translateY(420px);opacity:0}}
+@keyframes grow{0%{clip-path:inset(0 100% 0 0)}100%{clip-path:inset(0 0 0 0)}}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-14px)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes orbit{from{transform:rotate(0) translateX(120px) rotate(0)}to{transform:rotate(360deg) translateX(120px) rotate(-360deg)}}
+@keyframes walk{0%{left:5%}100%{left:80%}}
+@keyframes flick{0%,100%{transform:scale(1) rotate(-2deg)}50%{transform:scale(1.15) rotate(3deg)}}
+@keyframes open{0%{transform:perspective(600px) rotateY(0)}100%{transform:perspective(600px) rotateY(-160deg)}}
+@keyframes flow{0%{left:-10%}100%{left:100%}}
+@keyframes rise{0%{transform:translateY(60px);opacity:0}100%{transform:none;opacity:1}}
+@keyframes rock{0%,100%{transform:rotate(-6deg)}50%{transform:rotate(6deg)}}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.12)}}
+@keyframes drift{0%{transform:translateX(0)}100%{transform:translateX(40px)}}
+</style>
+</head>
+<body>
+<h1>📖 THẾ GIỚI TRONG TRANG SÁCH</h1>
+<div class="sub">Xem tranh – nghe đọc – đọc theo từng câu</div>
+<div class="stage" id="stage"></div>
+<div class="line" id="line"></div>
+<div class="ctrl">
+  <button id="prev">⏮ Trước</button>
+  <button class="main" id="play">▶ Tự chạy</button>
+  <button id="next">Sau ⏭</button>
+  <button id="speak">🔊 Đọc</button>
+  <button id="quiz">🙈 Che chữ</button>
+</div>
+<div class="dots" id="dots"></div>
+<div class="full" id="full"></div>
+
+<script>
+const L = [
+ "Trang sách mở ra thế giới diệu kì:",
+ "Trên bầu trời những vì sao lấp lánh",
+ "Mặt biển xanh, cánh buồm nâu trong nắng",
+ "Sau cơn mưa hiện bảy sắc cầu vồng.",
+ "Trang sách trả lời câu hỏi tuổi thơ",
+ "Vũ trụ bao la bao điều bí mật",
+ "Trái đất rộng có chân người chinh phục",
+ "Mặt trăng hiền giấu chú Cuội ở đâu?",
+ "Trang sách thắp lên ngọn lửa khát khao",
+ "Những ước mơ có dáng hình xứ sở",
+ "Những ước mơ tuổi thơ luôn rộng mở",
+ "Con đường dài tít tắp đợi mong ta.",
+ "Bài học nào trong trang sách thiết tha",
+ "Nhân nghĩa bao đời cha ông gìn giữ",
+ "Như dòng sông sẽ chảy về biển cả",
+ "Lớn khôn rồi vẫn nhớ tiếng mẹ ru."
+];
+// helper: emoji element
+const E=(ch,x,y,s,anim="",extra="")=>`<div class="e" style="left:${x}%;top:${y}%;font-size:${s}px;${anim?`animation:${anim};`:""}${extra}">${ch}</div>`;
+const rnd=(n,f)=>Array.from({length:n},(_,i)=>f(i)).join("");
+const S = [
+ // 1 book opens to wonders
+ {bg:"linear-gradient(#fde68a,#fca5a5)",h:
+  E("✨",20,15,40,"twinkle 1.5s infinite")+E("🌍",42,18,70,"float 3s infinite")+E("⭐",70,12,40,"twinkle 1.2s infinite .4s")+
+  E("🦋",15,40,40,"float 2s infinite")+E("🐳",72,38,50,"float 2.6s infinite")+
+  `<div class="e" style="left:35%;top:52%;font-size:120px">📖</div>`},
+ // 2 stars in sky
+ {bg:"linear-gradient(#0b1033,#2b2f77)",h:
+  rnd(22,i=>E(i%3?"⭐":"✨",(i*37)%95,(i*23)%70,18+(i%4)*8,`twinkle ${1+(i%5)*.4}s infinite ${(i%7)*.3}s`))+E("🌙",80,8,60,"float 4s infinite")+E("🏠",8,72,70)},
+ // 3 blue sea, brown sail in sun
+ {bg:"linear-gradient(#93c5fd 0 55%,#1d4ed8 55%)",h:
+  E("☀️",78,6,80,"spin 12s linear infinite")+E("☁️",10,8,50,"drift 4s alternate infinite")+
+  `<div class="e" style="top:38%;font-size:80px;animation:sail 9s linear infinite"><div style="animation:bob 1.5s infinite">⛵</div></div>`+
+  E("🌊",5,70,50,"bob 2s infinite")+E("🌊",40,78,50,"bob 2.4s infinite")+E("🌊",75,68,50,"bob 1.8s infinite")+E("🐟",60,85,30,"float 2s infinite")},
+ // 4 rainbow after rain
+ {bg:"linear-gradient(#bae6fd,#e0f2fe)",h:
+  rnd(14,i=>E("💧",(i*13)%95,0,22,`fall 2.5s linear infinite ${(i%5)*.5}s`))+
+  `<div class="e" style="left:10%;top:18%;width:80%;height:80%;border-radius:50% 50% 0 0;background:radial-gradient(circle at 50% 100%,transparent 42%,#8b5cf6 42% 46%,#6366f1 46% 50%,#3b82f6 50% 54%,#22c55e 54% 58%,#eab308 58% 62%,#f97316 62% 66%,#ef4444 66% 70%,transparent 70%);animation:grow 3s ease-out forwards"></div>`+
+  E("☁️",4,6,60)+E("🌧️",75,4,55)+E("🌷",20,82,40)+E("🌼",72,82,40)},
+ // 5 book answers childhood questions
+ {bg:"linear-gradient(#fef3c7,#fde68a)",h:
+  E("❓",20,15,60,"float 2s infinite")+E("❔",70,10,50,"float 2.5s infinite .5s")+E("❓",50,5,40,"float 1.8s infinite .2s")+
+  E("🧒",22,52,100,"rock 2s infinite")+E("📖",48,60,80,"pulse 1.5s infinite")+E("💡",70,45,80,"twinkle 1.6s infinite")},
+ // 6 vast universe, mysteries
+ {bg:"radial-gradient(circle,#4c1d95,#0b0320)",h:
+  rnd(18,i=>E("·",(i*41)%98,(i*29)%95,30,`twinkle ${1+(i%4)*.5}s infinite`,"color:#fff"))+
+  `<div class="e" style="left:45%;top:42%;font-size:70px">☀️</div>`+
+  `<div class="e" style="left:48%;top:46%;font-size:40px;animation:orbit 6s linear infinite">🪐</div>`+
+  `<div class="e" style="left:48%;top:46%;font-size:30px;animation:orbit 4s linear infinite reverse">🌍</div>`+
+  E("🚀",8,70,50,"float 2s infinite")+E("☄️",80,10,45,"float 3s infinite")+E("❓",85,70,40,"twinkle 2s infinite")},
+ // 7 wide Earth, people explore
+ {bg:"linear-gradient(#bae6fd 0 60%,#86efac 60%)",h:
+  E("🏔️",8,30,90)+E("🏜️",40,40,70)+E("🌋",72,32,80)+E("🚩",20,22,36,"rock 1.5s infinite")+
+  `<div class="e" style="top:60%;font-size:60px;animation:walk 7s linear infinite alternate">🧗</div>`+E("🧭",85,72,50,"spin 5s linear infinite")+E("✈️",60,8,40,"drift 3s alternate infinite")},
+ // 8 gentle moon, where hides Cuội
+ {bg:"linear-gradient(#0f172a,#1e3a8a)",h:
+  `<div class="e" style="left:30%;top:10%;width:240px;height:240px;border-radius:50%;background:radial-gradient(circle at 40% 40%,#fffbe6,#fde68a);box-shadow:0 0 60px #fde68a;animation:float 5s infinite"></div>`+
+  E("🌳",40,22,90)+E("🧑‍🌾",52,32,46,"twinkle 3s infinite")+E("❓",75,15,50,"float 2s infinite")+
+  E("🏮",8,60,50,"rock 2s infinite")+E("🏮",85,62,50,"rock 2.2s infinite")+E("🧒",15,78,50)+E("👧",80,80,50)},
+ // 9 book lights flame of longing
+ {bg:"linear-gradient(#7c2d12,#f59e0b)",h:
+  E("📖",38,55,110)+E("🔥",44,25,110,"flick .8s infinite")+
+  rnd(8,i=>E("✨",15+i*10,(i%2)*20+10,26,`twinkle 1s infinite ${i*.2}s`))},
+ // 10 dreams shaped like the homeland (Vietnam)
+ {bg:"linear-gradient(#fecaca,#fef3c7)",h:
+  `<div class="e" style="left:38%;top:12%;width:24%;aspect-ratio:3/2;background:#da251d;display:grid;place-items:center;font-size:40px;color:#ff0;animation:rock 3s infinite;border-radius:6px">★</div>`+
+  E("🌾",10,62,60,"rock 2s infinite")+E("🌾",22,66,60,"rock 2.3s infinite")+E("🛕",42,58,80)+E("🐃",70,64,60,"float 3s infinite")+E("💭",80,20,60,"pulse 2s infinite")+E("🌿",85,72,40)},
+ // 11 childhood dreams always open
+ {bg:"linear-gradient(#a5f3fc,#f0abfc)",h:
+  E("🎈",15,20,60,"float 2s infinite")+E("🎈",75,15,60,"float 2.4s infinite .3s")+E("🪁",45,8,60,"rock 2s infinite")+
+  E("👩‍🚀",10,60,60,"rise 1s both")+E("👨‍⚕️",30,62,60,"rise 1s .3s both")+E("👩‍🏫",50,62,60,"rise 1s .6s both")+E("👨‍🎨",70,60,60,"rise 1s .9s both")+E("🌈",80,40,50,"pulse 2s infinite")},
+ // 12 long road awaits
+ {bg:"linear-gradient(#bfdbfe 0 45%,#bbf7d0 45%)",h:
+  `<div class="e" style="left:0;top:45%;width:100%;height:55%;background:#a16207;clip-path:polygon(48% 0,52% 0,85% 100%,15% 100%)"></div>`+
+  E("🌅",44,28,60,"pulse 3s infinite")+E("🌳",10,46,60)+E("🌳",80,46,60)+
+  `<div class="e" style="left:42%;font-size:60px;animation:rise 4s infinite reverse">🎒</div>`+E("🧒",44,74,60,"float 1s infinite")},
+ // 13 heartfelt lessons in the book
+ {bg:"linear-gradient(#fef9c3,#fde68a)",h:
+  E("🏫",8,20,90)+E("👩‍🏫",42,22,70)+E("📖",38,58,80,"pulse 2s infinite")+E("❤️",58,48,50,"pulse 1s infinite")+E("🧒",20,62,60)+E("👧",70,62,60)},
+ // 14 kindness kept by ancestors
+ {bg:"linear-gradient(#fde68a,#d97706)",h:
+  E("👴",15,40,90)+E("👨",40,40,90)+E("🧒",66,50,70)+
+  E("🤝",30,22,50,"pulse 1.6s infinite")+E("🤝",58,26,50,"pulse 1.6s infinite .5s")+E("💛",48,10,40,"float 2s infinite")+E("🏯",80,10,60)},
+ // 15 like a river flowing to the sea
+ {bg:"linear-gradient(#bbf7d0 0 40%,#60a5fa 40% 80%,#1e40af 80%)",h:
+  E("⛰️",2,8,80)+E("🌳",25,20,50)+E("🏖️",82,30,60)+
+  rnd(6,i=>`<div class="e" style="top:${50+(i%3)*9}%;font-size:40px;animation:flow ${5+i}s linear infinite ${i*.8}s">〰️</div>`)+
+  `<div class="e" style="top:55%;font-size:40px;animation:flow 8s linear infinite">🛶</div>`+E("🐟",60,84,36,"float 2s infinite")},
+ // 16 grown up, still remember mother's lullaby
+ {bg:"linear-gradient(#312e81,#9d174d)",h:
+  E("🌙",75,8,70,"float 4s infinite")+E("⭐",20,10,30,"twinkle 1.5s infinite")+E("⭐",55,15,24,"twinkle 2s infinite .5s")+
+  `<div class="e" style="left:30%;top:42%;font-size:110px;transform-origin:50% 0;animation:rock 3s ease-in-out infinite">🧺</div>`+
+  E("👩",10,40,100)+E("👶",37,48,50,"rock 3s infinite")+
+  E("🎵",50,25,40,"float 2s infinite")+E("🎶",62,35,40,"float 2.4s infinite .5s")+E("🧑‍🎓",78,55,80,"rise 2s both")}
+];
+
+const stage=document.getElementById("stage"),lineEl=document.getElementById("line"),dots=document.getElementById("dots"),full=document.getElementById("full");
+S.forEach((s,i)=>{const d=document.createElement("div");d.className="scene";d.dataset.i=i;stage.appendChild(d);});
+L.forEach((l,i)=>{const d=document.createElement("div");d.className="dot s"+(1+(i>>2));d.textContent=i+1;d.onclick=()=>go(i);dots.appendChild(d);});
+full.innerHTML=[0,1,2,3].map(k=>"<p>"+L.slice(k*4,k*4+4).map((l,j)=>`<span data-i="${k*4+j}">${l}</span>`).join("")+"</p>").join("");
+full.onclick=e=>{if(e.target.dataset.i)go(+e.target.dataset.i)};
+
+let cur=0,auto=false,quiz=false,timers=[];
+function clear(){timers.forEach(clearTimeout);timers=[];}
+function go(i,speak){
+  clear();cur=(i+16)%16;
+  stage.style.background=S[cur].bg;
+  [...stage.children].forEach(sc=>{const on=+sc.dataset.i===cur;sc.classList.toggle("on",on);sc.innerHTML=on?S[cur].h:"";});
+  const words=L[cur].split(" ");
+  lineEl.innerHTML=words.map((w,k)=>`<span class="w${quiz&&k%2? " hide":""}">${w}</span>`).join(" ");
+  [...dots.children].forEach((d,k)=>d.classList.toggle("cur",k===cur));
+  full.querySelectorAll("span").forEach(s=>s.classList.toggle("cur",+s.dataset.i===cur));
+  const ws=lineEl.querySelectorAll(".w");
+  ws.forEach((w,k)=>timers.push(setTimeout(()=>w.classList.add("lit"),400+k*420)));
+  if(speak||auto) say(L[cur]);
+  if(auto) timers.push(setTimeout(()=>go(cur+1),Math.max(5200,800+ws.length*420+2500)));
+}
+let viVoice=null;
+function pickVoice(){viVoice=(speechSynthesis.getVoices()||[]).find(v=>/^vi/i.test(v.lang))||null;}
+if("speechSynthesis" in window){pickVoice();speechSynthesis.onvoiceschanged=pickVoice;}
+function say(t){
+  if(!("speechSynthesis" in window))return;
+  speechSynthesis.cancel();
+  const u=new SpeechSynthesisUtterance(t);u.lang="vi-VN";u.rate=.8;if(viVoice)u.voice=viVoice;
+  speechSynthesis.speak(u);
+}
+document.getElementById("prev").onclick=()=>go(cur-1);
+document.getElementById("next").onclick=()=>go(cur+1);
+document.getElementById("speak").onclick=()=>go(cur,true);
+const playB=document.getElementById("play");
+playB.onclick=()=>{auto=!auto;playB.textContent=auto?"⏸ Dừng":"▶ Tự chạy";if(!auto&&"speechSynthesis" in window)speechSynthesis.cancel();go(cur);};
+const quizB=document.getElementById("quiz");
+quizB.onclick=()=>{quiz=!quiz;quizB.textContent=quiz?"👀 Hiện chữ":"🙈 Che chữ";full.style.display=quiz?"none":"";go(cur);};
+document.addEventListener("keydown",e=>{if(e.key==="ArrowRight")go(cur+1);if(e.key==="ArrowLeft")go(cur-1);if(e.key===" "){e.preventDefault();playB.click();}});
+let tx=0;stage.addEventListener("touchstart",e=>tx=e.touches[0].clientX);
+stage.addEventListener("touchend",e=>{const dx=e.changedTouches[0].clientX-tx;if(Math.abs(dx)>40)go(cur+(dx<0?1:-1));});
+go(0);
+</script>
+</body>
+</html>
